@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finite Fields and Integer Factorization</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #050816; --bg-midnight: #0B1026; --accent-violet: #6D5DFE;
+  --accent-cyan: #00E5FF; --accent-gold: #FFD700; --accent-pink: #FF4FD8;
+  --text-white: #FFFFFF;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: var(--bg-deep); color: var(--text-white); overflow: hidden; height: 100vh; }
+.presentation { width: 100vw; height: 100vh; position: relative; }
+.slide { position: absolute; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 40px 60px; overflow: hidden; }
+.slide.active { display: flex; }
+.bg-particles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.particle { position: absolute; border-radius: 50%; animation: float 15s infinite ease-in-out; }
+@keyframes float {
+  0%,100% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.3; }
+  25% { transform: translateY(-30px) translateX(20px) rotate(90deg); opacity: 0.8; }
+  50% { transform: translateY(20px) translateX(-20px) rotate(180deg); opacity: 0.5; }
+  75% { transform: translateY(-10px) translateX(30px) rotate(270deg); opacity: 0.7; }
+}
+.glass-card {
+  background: rgba(11,16,38,0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(109,93,254,0.2); border-radius: 24px; padding: 30px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); z-index: 10;
+}
+.glass-card:hover { border-color: rgba(109,93,254,0.5); box-shadow: 0 8px 32px rgba(109,93,254,0.15), inset 0 1px 0 rgba(255,255,255,0.1); }
+.title-main {
+  font-family: 'Orbitron', sans-serif; font-size: 3.2rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan), var(--accent-gold));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  text-align: center; line-height: 1.2; animation: titleGlow 3s ease-in-out infinite alternate;
+}
+@keyframes titleGlow {
+  0% { filter: brightness(1) drop-shadow(0 0 20px rgba(109,93,254,0.4)); }
+  100% { filter: brightness(1.2) drop-shadow(0 0 40px rgba(0,229,255,0.5)); }
+}
+.title-sub {
+  font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 400; color: var(--accent-cyan);
+  text-align: center; margin-top: 15px; letter-spacing: 3px; text-shadow: 0 0 20px rgba(0,229,255,0.4);
+}
+.title-slide {
+  font-family: 'Orbitron', sans-serif; font-size: 2.4rem; font-weight: 700; color: var(--accent-violet);
+  text-shadow: 0 0 30px rgba(109,93,254,0.4); margin-bottom: 30px; text-align: center;
+}
+.text-body { font-size: 1.15rem; line-height: 1.8; color: rgba(255,255,255,0.85); }
+.text-highlight { color: var(--accent-gold); font-weight: 600; }
+.text-cyan { color: var(--accent-cyan); font-weight: 600; }
+.math-eq {
+  font-family: 'JetBrains Mono', monospace; font-size: 1.3rem;
+  background: rgba(109,93,254,0.1); border: 1px solid rgba(109,93,254,0.3); border-radius: 12px;
+  padding: 15px 30px; display: inline-block; color: var(--accent-gold);
+  text-shadow: 0 0 10px rgba(255,215,0,0.3); animation: eqPulse 2s ease-in-out infinite;
+}
+@keyframes eqPulse { 0%,100% { box-shadow: 0 0 10px rgba(109,93,254,0.2); } 50% { box-shadow: 0 0 25px rgba(109,93,254,0.4); } }
+.nav-controls {
+  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px;
+  z-index: 1000; background: rgba(5,8,22,0.8); backdrop-filter: blur(10px); padding: 12px 25px;
+  border-radius: 50px; border: 1px solid rgba(109,93,254,0.2);
+}
+.nav-btn {
+  background: transparent; border: 1px solid rgba(109,93,254,0.4); color: var(--accent-cyan);
+  padding: 10px 24px; border-radius: 25px; cursor: pointer; font-family: 'Inter', sans-serif;
+  font-weight: 600; font-size: 0.9rem; transition: all 0.3s ease;
+}
+.nav-btn:hover { background: rgba(109,93,254,0.2); border-color: var(--accent-violet); box-shadow: 0 0 20px rgba(109,93,254,0.3); }
+.slide-counter { color: var(--accent-gold); font-family: 'Orbitron', sans-serif; font-size: 0.9rem; display: flex; align-items: center; padding: 0 15px; }
+.progress-bar { position: fixed; bottom: 0; left: 0; height: 3px; background: linear-gradient(90deg, var(--accent-violet), var(--accent-cyan), var(--accent-gold)); transition: width 0.5s ease; z-index: 1001; box-shadow: 0 0 10px rgba(109,93,254,0.5); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 1200px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 25px; width: 100%; max-width: 1200px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; width: 100%; max-width: 1200px; }
+.team-card { background: rgba(11,16,38,0.7); backdrop-filter: blur(15px); border: 1px solid rgba(109,93,254,0.15); border-radius: 16px; padding: 18px 15px; text-align: center; transition: all 0.4s ease; animation: cardFloat 4s ease-in-out infinite; }
+.team-card:nth-child(odd) { animation-delay: 0s; } .team-card:nth-child(even) { animation-delay: 2s; }
+@keyframes cardFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.team-card:hover { border-color: var(--accent-violet); transform: translateY(-5px) scale(1.02); box-shadow: 0 10px 40px rgba(109,93,254,0.2); }
+.team-name { font-weight: 700; font-size: 0.95rem; color: var(--text-white); margin-bottom: 4px; }
+.team-id { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent-cyan); }
+.agenda-item { background: rgba(11,16,38,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(109,93,254,0.2); border-radius: 16px; padding: 20px 25px; display: flex; align-items: center; gap: 20px; transition: all 0.4s ease; cursor: pointer; }
+.agenda-item:hover { border-color: var(--accent-violet); transform: translateX(10px); box-shadow: 0 5px 25px rgba(109,93,254,0.15); }
+.agenda-num { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 900; color: var(--accent-violet); min-width: 50px; text-shadow: 0 0 15px rgba(109,93,254,0.5); }
+.agenda-text { font-size: 1.1rem; font-weight: 500; color: var(--text-white); }
+.code-window { background: #0D1117; border: 1px solid rgba(109,93,254,0.3); border-radius: 16px; overflow: hidden; width: 100%; max-width: 900px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+.code-header { background: rgba(109,93,254,0.1); padding: 12px 20px; display: flex; gap: 8px; align-items: center; }
+.code-dot { width: 12px; height: 12px; border-radius: 50%; } .code-dot.red { background: #FF5F56; } .code-dot.yellow { background: #FFBD2E; } .code-dot.green { background: #27C93F; }
+.code-title { margin-left: 10px; font-family: 'Inter', sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.6); }
+.code-body { padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.7; overflow-x: auto; color: #E6EDF3; }
+.code-keyword { color: #FF7B72; } .code-func { color: #D2A8FF; } .code-string { color: #A5D6FF; } .code-comment { color: #8B949E; } .code-number { color: #79C0FF; }
+.field-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 15px; margin-top: 20px; }
+.field-element { background: rgba(109,93,254,0.1); border: 1px solid rgba(109,93,254,0.3); border-radius: 12px; padding: 15px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: var(--accent-gold); animation: elementAppear 0.5s ease forwards; opacity: 0; transform: scale(0.8); }
+@keyframes elementAppear { to { opacity: 1; transform: scale(1); } }
+.flow-step { background: rgba(11,16,38,0.7); border: 2px solid var(--accent-violet); border-radius: 16px; padding: 18px 25px; text-align: center; font-weight: 600; position: relative; animation: flowPulse 2s ease-in-out infinite; }
+.flow-step::after { content: '\2193'; position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); color: var(--accent-cyan); font-size: 1.5rem; animation: arrowBounce 1s ease-in-out infinite; }
+.flow-step:last-child::after { display: none; }
+@keyframes flowPulse { 0%,100% { box-shadow: 0 0 10px rgba(109,93,254,0.2); } 50% { box-shadow: 0 0 25px rgba(109,93,254,0.5); } }
+@keyframes arrowBounce { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(5px); } }
+.app-card { background: rgba(11,16,38,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(0,229,255,0.2); border-radius: 20px; padding: 30px; text-align: center; transition: all 0.4s ease; }
+.app-card:hover { border-color: var(--accent-cyan); transform: translateY(-8px); box-shadow: 0 15px 40px rgba(0,229,255,0.15); }
+.app-icon { font-size: 3rem; margin-bottom: 15px; }
+.app-title { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: var(--accent-cyan); margin-bottom: 10px; }
+.check-list { list-style: none; padding: 0; }
+.check-list li { padding: 12px 0; padding-left: 35px; position: relative; font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.check-list li::before { content: '\2713'; position: absolute; left: 0; color: var(--accent-gold); font-weight: bold; font-size: 1.3rem; }
+.thank-you-text {
+  font-family: 'Orbitron', sans-serif; font-size: 5rem; font-weight: 900;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-violet), var(--accent-cyan), var(--accent-gold));
+  background-size: 300% 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: shimmer 3s ease-in-out infinite; text-align: center;
+}
+@keyframes shimmer { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+.quote-text { font-style: italic; font-size: 1.4rem; color: var(--accent-gold); text-align: center; max-width: 800px; line-height: 1.8; text-shadow: 0 0 20px rgba(255,215,0,0.2); }
+.inst-header { text-align: center; margin-bottom: 30px; }
+.inst-name { font-family: 'Orbitron', sans-serif; font-size: 1.4rem; color: var(--accent-gold); letter-spacing: 4px; text-shadow: 0 0 20px rgba(255,215,0,0.3); }
+.inst-detail { font-size: 0.95rem; color: rgba(255,255,255,0.7); margin-top: 8px; letter-spacing: 2px; }
+.guide-card { background: rgba(11,16,38,0.7); backdrop-filter: blur(15px); border: 2px solid var(--accent-gold); border-radius: 20px; padding: 30px 50px; text-align: center; box-shadow: 0 0 40px rgba(255,215,0,0.1); }
+.guide-name { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; color: var(--accent-gold); margin-bottom: 10px; }
+.guide-title { font-size: 1rem; color: var(--accent-cyan); margin-bottom: 5px; }
+.guide-detail { font-size: 0.85rem; color: rgba(255,255,255,0.6); }
+.split-container { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; max-width: 1100px; }
+.split-box { background: rgba(11,16,38,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(109,93,254,0.2); border-radius: 20px; padding: 30px; position: relative; overflow: hidden; }
+.split-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent-violet), var(--accent-cyan)); }
+.split-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; color: var(--accent-violet); margin-bottom: 15px; }
+.problem-box { background: rgba(255,79,216,0.08); border: 1px solid rgba(255,79,216,0.3); border-radius: 16px; padding: 25px; margin: 15px 0; }
+.problem-label { font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: var(--accent-pink); margin-bottom: 10px; letter-spacing: 2px; }
+.field-example { background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.3); border-radius: 12px; padding: 15px 20px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; color: var(--accent-cyan); transition: all 0.3s ease; }
+.field-example:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(0,229,255,0.2); }
+.compare-container { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 900px; }
+.compare-box { padding: 25px; border-radius: 16px; text-align: center; }
+.compare-red { background: rgba(255,95,86,0.1); border: 2px solid rgba(255,95,86,0.4); }
+.compare-green { background: rgba(39,201,63,0.1); border: 2px solid rgba(39,201,63,0.4); }
+.compare-title { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-bottom: 15px; }
+.compare-red .compare-title { color: #FF5F56; } .compare-green .compare-title { color: #27C93F; }
+.step-container { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 700px; }
+.step-item { display: flex; align-items: center; gap: 20px; background: rgba(11,16,38,0.6); border: 1px solid rgba(109,93,254,0.2); border-radius: 16px; padding: 20px 25px; transition: all 0.3s ease; }
+.step-item:hover { border-color: var(--accent-violet); transform: translateX(10px); }
+.step-num { width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan)); display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.1rem; flex-shrink: 0; }
+.step-text { font-size: 1.05rem; }
+.terminal { background: #0D1117; border: 1px solid rgba(0,229,255,0.3); border-radius: 12px; padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #E6EDF3; margin-top: 15px; }
+.terminal-line { margin: 5px 0; } .terminal-prompt { color: var(--accent-cyan); } .terminal-output { color: #A5D6FF; } .terminal-success { color: #27C93F; }
+.slide-enter { animation: slideIn 0.8s ease forwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(30px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.fade-in { animation: fadeIn 1s ease forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.math-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden; }
+.math-symbol { position: absolute; font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; color: rgba(109,93,254,0.08); animation: symbolFloat 20s linear infinite; }
+@keyframes symbolFloat { 0% { transform: translateY(100vh) rotate(0deg); opacity: 0; } 10% { opacity: 0.3; } 90% { opacity: 0.3; } 100% { transform: translateY(-100px) rotate(360deg); opacity: 0; } }
+@media (max-width: 1024px) {
+  .title-main { font-size: 2.2rem; } .grid-4 { grid-template-columns: repeat(2,1fr); } .grid-3 { grid-template-columns: 1fr; }
+  .split-container { grid-template-columns: 1fr; } .field-grid { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+<div class="presentation">
+<div class="bg-particles" id="particles"></div>
+
+<!-- SLIDE 1: COVER -->
+<div class="slide active" id="slide1">
+<div class="math-bg" id="mathBg1"></div>
+<div class="inst-header">
+<div class="inst-name">THE NATIONAL INSTITUTE OF ENGINEERING</div>
+<div class="inst-detail">Department of Mathematics | Experiential Learning Project | CSE-C Section | Academic Year 2026</div>
+</div>
+<div style="text-align: center; z-index: 10;">
+<div class="title-main" style="font-size: 3.8rem; margin-bottom: 20px;">
+Finite Fields and<br>Integer Factorization
+</div>
+<div class="title-sub" style="font-size: 1.3rem; max-width: 900px; margin: 0 auto;">
+Construction of F<sub>p</sub><sup>n</sup>, Pollard's Rho Algorithm and Euler's Phi Function
+</div>
+<div style="margin-top: 25px; font-size: 1rem; color: rgba(255,255,255,0.6); letter-spacing: 2px;">
+Applications of Abstract Algebra and Number Theory in Modern Computing and Cryptography
+</div>
+</div>
+<div style="position: absolute; bottom: 80px; display: flex; gap: 60px; z-index: 10;">
+<div class="glass-card" style="text-align: center; min-width: 280px;">
+<div style="font-family: Orbitron; color: var(--accent-gold); font-size: 0.85rem; letter-spacing: 3px; margin-bottom: 8px;">GUIDED BY</div>
+<div style="font-size: 1.2rem; font-weight: 700;">Dr. Shivarajkumar</div>
+<div style="font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 5px;">Associate Professor | Ph.D. (NITK Surathkal)</div>
+</div>
+<div class="glass-card" style="text-align: center; min-width: 280px;">
+<div style="font-family: Orbitron; color: var(--accent-violet); font-size: 0.85rem; letter-spacing: 3px; margin-bottom: 8px;">PRESENTED BY</div>
+<div style="font-size: 1.2rem; font-weight: 700;">GROUP 3</div>
+<div style="font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 5px;">CSE-C Section | 11 Members</div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 2: TEAM -->
+<div class="slide" id="slide2">
+<div class="title-slide">Team Members - Group 3</div>
+<div class="grid-4" style="max-width: 1100px;">
+<div class="team-card"><div class="team-name">NISHANT</div><div class="team-id">4NI23CS127</div></div>
+<div class="team-card"><div class="team-name">PAVAN VITTHAL RAGHA</div><div class="team-id">4NI23CS136</div></div>
+<div class="team-card"><div class="team-name">PIYUSH NISHAD RAJ</div><div class="team-id">4NI23CS138</div></div>
+<div class="team-card"><div class="team-name">PRAHAS P B RAO</div><div class="team-id">4NI23CS144</div></div>
+<div class="team-card"><div class="team-name">PRAJWAL K</div><div class="team-id">4NI23CS146</div></div>
+<div class="team-card"><div class="team-name">PRASHANTAKUMAR</div><div class="team-id">4NI23CS153</div></div>
+<div class="team-card"><div class="team-name">PURUSHOTHAM B J</div><div class="team-id">4NI23CS159</div></div>
+<div class="team-card"><div class="team-name">RAHUL ANJAN H</div><div class="team-id">4NI23CS161</div></div>
+<div class="team-card"><div class="team-name">RAHUL SHREEDHAR G.</div><div class="team-id">4NI23CS162</div></div>
+<div class="team-card"><div class="team-name">RAMESH R</div><div class="team-id">4NI23CS165</div></div>
+<div class="team-card"><div class="team-name">RISHABH PRAJAPATI</div><div class="team-id">4NI23CS169</div></div>
+<div class="team-card" style="border-color: var(--accent-gold);">
+<div style="font-family: Orbitron; color: var(--accent-gold); font-size: 0.8rem; margin-bottom: 5px;">GUIDE</div>
+<div class="team-name">Dr. Shivarajkumar</div>
+<div class="team-id">Associate Professor</div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 3: AGENDA -->
+<div class="slide" id="slide3">
+<div class="title-slide">Agenda</div>
+<div style="display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 700px;">
+<div class="agenda-item"><div class="agenda-num">01</div><div class="agenda-text">Introduction</div></div>
+<div class="agenda-item"><div class="agenda-num">02</div><div class="agenda-text">Finite Fields</div></div>
+<div class="agenda-item"><div class="agenda-num">03</div><div class="agenda-text">Construction of F<sub>p</sub><sup>n</sup></div></div>
+<div class="agenda-item"><div class="agenda-num">04</div><div class="agenda-text">Listing Elements of F<sub>p</sub><sup>n</sup></div></div>
+<div class="agenda-item"><div class="agenda-num">05</div><div class="agenda-text">Pollard's Rho Algorithm</div></div>
+<div class="agenda-item"><div class="agenda-num">06</div><div class="agenda-text">Euler's Phi Function</div></div>
+<div class="agenda-item"><div class="agenda-num">07</div><div class="agenda-text">Program Demonstrations</div></div>
+<div class="agenda-item"><div class="agenda-num">08</div><div class="agenda-text">Applications and Conclusion</div></div>
+</div>
+</div>
+
+<!-- SLIDE 4: PROJECT OVERVIEW -->
+<div class="slide" id="slide4">
+<div class="title-slide">Project Overview</div>
+<div class="split-container">
+<div class="split-box">
+<div class="split-title">Problem 1</div>
+<div class="text-body" style="margin-bottom: 15px;">
+<span class="text-highlight">Construct and list all elements</span> of the finite field F<sub>p</sub><sup>n</sup> using irreducible polynomials over Z<sub>p</sub>.
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+<div class="math-eq" style="font-size: 1rem;">Z<sub>p</sub> to Polynomial Ring</div>
+<div style="text-align: center; color: var(--accent-cyan); font-size: 1.5rem;">&#8595;</div>
+<div class="math-eq" style="font-size: 1rem;">Irreducible Polynomial</div>
+<div style="text-align: center; color: var(--accent-cyan); font-size: 1.5rem;">&#8595;</div>
+<div class="math-eq" style="font-size: 1rem;">Finite Field F<sub>p</sub><sup>n</sup></div>
+</div>
+</div>
+<div class="split-box">
+<div class="split-title">Problem 2</div>
+<div class="text-body" style="margin-bottom: 15px;">
+Factor <span class="text-highlight">n = p x q</span> using Pollard's Rho Algorithm and compute Euler's Phi Function.
+</div>
+<div style="margin-top: 20px;">
+<div class="problem-box">
+<div class="problem-label">INPUT</div>
+<div class="math-eq" style="font-size: 1.1rem;">n = p x q</div>
+</div>
+<div class="problem-box">
+<div class="problem-label">OUTPUT</div>
+<div style="font-size: 1rem; color: var(--accent-cyan);">Prime factors p, q and phi(n)</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 5: PROBLEM STATEMENT 1 -->
+<div class="slide" id="slide5">
+<div class="title-slide">Problem Statement 1</div>
+<div class="glass-card" style="max-width: 900px; text-align: center;">
+<div class="text-body" style="font-size: 1.3rem; margin-bottom: 30px;">
+For any <span class="text-highlight">prime p</span>, positive integer <span class="text-highlight">n >= 2</span>, and fixed <span class="text-highlight">irreducible polynomial</span> of degree n over Z<sub>p</sub>, write a program to <span class="text-cyan">list all elements</span> of finite field F<sub>p</sub><sup>n</sup>.
+</div>
+<div style="display: flex; justify-content: center; gap: 30px; margin-top: 20px;">
+<div style="text-align: center;"><div class="math-eq">Z<sub>p</sub></div><div style="color: var(--accent-violet); margin-top: 10px; font-size: 0.9rem;">Base Field</div></div>
+<div style="display: flex; align-items: center; color: var(--accent-cyan); font-size: 2rem;">&#8594;</div>
+<div style="text-align: center;"><div class="math-eq">Z<sub>p</sub>[x]</div><div style="color: var(--accent-violet); margin-top: 10px; font-size: 0.9rem;">Polynomial Ring</div></div>
+<div style="display: flex; align-items: center; color: var(--accent-cyan); font-size: 2rem;">&#8594;</div>
+<div style="text-align: center;"><div class="math-eq">f(x) irreducible</div><div style="color: var(--accent-violet); margin-top: 10px; font-size: 0.9rem;">Degree n</div></div>
+<div style="display: flex; align-items: center; color: var(--accent-cyan); font-size: 2rem;">&#8594;</div>
+<div style="text-align: center;"><div class="math-eq">F<sub>p</sub><sup>n</sup></div><div style="color: var(--accent-violet); margin-top: 10px; font-size: 0.9rem;">p<sup>n</sup> Elements</div></div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 6: INTRO TO FINITE FIELDS -->
+<div class="slide" id="slide6">
+<div class="title-slide">Introduction to Finite Fields</div>
+<div class="grid-2" style="max-width: 1000px;">
+<div class="glass-card">
+<div style="font-family: Orbitron; color: var(--accent-violet); font-size: 1.1rem; margin-bottom: 15px;">Definition</div>
+<div class="text-body">
+A <span class="text-highlight">finite field</span> (Galois Field) is a field with a finite number of elements. It satisfies all field axioms: closure, associativity, commutativity, distributivity, identity elements, and inverses.
+</div>
+<div style="margin-top: 20px; padding: 15px; background: rgba(109,93,254,0.1); border-radius: 12px;">
+<div style="font-family: JetBrains Mono; color: var(--accent-gold); font-size: 1.1rem;">|F| = p<sup>n</sup> for some prime p</div>
+</div>
+</div>
+<div class="glass-card">
+<div style="font-family: Orbitron; color: var(--accent-cyan); font-size: 1.1rem; margin-bottom: 15px;">Field Properties</div>
+<ul class="check-list" style="font-size: 0.95rem;">
+<li>Closed under + and x</li>
+<li>Associative and Commutative</li>
+<li>Distributive law holds</li>
+<li>Additive and Multiplicative identity</li>
+<li>Every element has inverse</li>
+<li>No zero divisors</li>
+</ul>
+</div>
+</div>
+<div style="margin-top: 25px; display: flex; gap: 20px; justify-content: center;">
+<div class="field-example">F<sub>2</sub></div>
+<div class="field-example">F<sub>3</sub></div>
+<div class="field-example">F<sub>5</sub></div>
+<div class="field-example">F<sub>8</sub> = F<sub>2</sub><sup>3</sup></div>
+<div class="field-example">F<sub>9</sub> = F<sub>3</sub><sup>2</sup></div>
+</div>
+</div>
+
+<!-- SLIDE 7: IRREDUCIBLE POLYNOMIALS -->
+<div class="slide" id="slide7">
+<div class="title-slide">Irreducible Polynomials</div>
+<div class="compare-container">
+<div class="compare-box compare-red">
+<div class="compare-title">REDUCIBLE</div>
+<div class="text-body" style="font-size: 0.95rem;">Can be factored into polynomials of lower degree.</div>
+<div style="margin-top: 15px; font-family: JetBrains Mono; font-size: 1rem; color: #FF5F56;">
+x<sup>2</sup> + 1 over Z<sub>2</sub><br>= (x + 1)<sup>2</sup>
+</div>
+</div>
+<div class="compare-box compare-green">
+<div class="compare-title">IRREDUCIBLE</div>
+<div class="text-body" style="font-size: 0.95rem;">Cannot be factored further over the given field.</div>
+<div style="margin-top: 15px; font-family: JetBrains Mono; font-size: 1rem; color: #27C93F;">
+x<sup>2</sup> + x + 1 over Z<sub>2</sub><br>&#10003; Cannot be factored
+</div>
+</div>
+</div>
+<div class="glass-card" style="margin-top: 30px; max-width: 800px; text-align: center;">
+<div style="font-family: Orbitron; color: var(--accent-gold); font-size: 1rem; margin-bottom: 10px;">WHY IMPORTANT?</div>
+<div class="text-body">Irreducible polynomials are the <span class="text-highlight">building blocks</span> for constructing extension fields. They create quotient rings that <span class="text-cyan">become fields</span> - enabling cryptographic systems, error-correcting codes, and advanced computing.</div>
+</div>
+</div>
+
+<!-- SLIDE 8: CONSTRUCTION F2^2 -->
+<div class="slide" id="slide8">
+<div class="title-slide">Construction of F<sub>2</sub><sup>2</sup></div>
+<div style="display: flex; gap: 40px; align-items: center; max-width: 1100px;">
+<div class="glass-card" style="flex: 1;">
+<div style="font-family: Orbitron; color: var(--accent-violet); font-size: 1rem; margin-bottom: 15px;">STEP-BY-STEP</div>
+<div style="display: flex; flex-direction: column; gap: 15px;">
+<div class="math-eq" style="font-size: 1rem;">f(x) = x<sup>2</sup> + x + 1</div>
+<div style="text-align: center; color: var(--accent-cyan);">&#8595;</div>
+<div class="math-eq" style="font-size: 1rem;">Z<sub>2</sub>[x] / (x<sup>2</sup>+x+1)</div>
+<div style="text-align: center; color: var(--accent-cyan);">&#8595;</div>
+<div class="math-eq" style="font-size: 1rem;">x<sup>2</sup> = x + 1 (mod f(x))</div>
+<div style="text-align: center; color: var(--accent-cyan);">&#8595;</div>
+<div class="math-eq" style="font-size: 1rem;">F<sub>2</sub><sup>2</sup> = {0, 1, x, x+1}</div>
+</div>
+</div>
+<div style="flex: 1; text-align: center;">
+<div style="font-family: Orbitron; color: var(--accent-gold); font-size: 1rem; margin-bottom: 20px;">REDUCTION RULE</div>
+<div class="glass-card">
+<div style="font-family: JetBrains Mono; font-size: 1.2rem; color: var(--accent-cyan); line-height: 2;">
+x<sup>2</sup> = x + 1<br>
+x<sup>3</sup> = x*x<sup>2</sup> = x(x+1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;= x<sup>2</sup> + x<br>
+&nbsp;&nbsp;&nbsp;&nbsp;= (x+1) + x<br>
+&nbsp;&nbsp;&nbsp;&nbsp;= 1
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 9: LISTING FIELD ELEMENTS -->
+<div class="slide" id="slide9">
+<div class="title-slide">Listing Field Elements - F<sub>2</sub><sup>2</sup></div>
+<div style="display: flex; gap: 50px; align-items: center; max-width: 1000px;">
+<div>
+<div class="glass-card" style="margin-bottom: 20px;">
+<div style="font-family: Orbitron; color: var(--accent-violet); margin-bottom: 15px;">ELEMENTS OF F<sub>2</sub><sup>2</sup></div>
+<div class="field-grid" style="grid-template-columns: repeat(2, 1fr); gap: 15px;">
+<div class="field-element">0</div>
+<div class="field-element">1</div>
+<div class="field-element">x</div>
+<div class="field-element">x + 1</div>
+</div>
+<div style="text-align: center; margin-top: 15px; font-family: Orbitron; color: var(--accent-gold);">Total: 4 = 2 squared elements</div>
+</div>
+<div class="glass-card">
+<div style="font-family: Orbitron; color: var(--accent-cyan); margin-bottom: 10px;">COEFFICIENT VIEW</div>
+<div style="font-family: JetBrains Mono; font-size: 1rem; line-height: 2; color: rgba(255,255,255,0.8);">
+0&nbsp;&nbsp;&nbsp;-&gt; (0, 0)<br>
+1&nbsp;&nbsp;&nbsp;-&gt; (1, 0)<br>
+x&nbsp;&nbsp;&nbsp;-&gt; (0, 1)<br>
+x+1 -&gt; (1, 1)
+</div>
+</div>
+</div>
+<div class="glass-card">
+<div style="font-family: Orbitron; color: var(--accent-gold); margin-bottom: 15px;">FINITE FIELD NETWORK</div>
+<svg width="300" height="300" viewBox="0 0 300 300">
+<line x1="150" y1="50" x2="250" y2="150" stroke="rgba(109,93,254,0.3)" stroke-width="2"/>
+<line x1="150" y1="50" x2="50" y2="150" stroke="rgba(109,93,254,0.3)" stroke-width="2"/>
+<line x1="50" y1="150" x2="150" y2="250" stroke="rgba(109,93,254,0.3)" stroke-width="2"/>
+<line x1="250" y1="150" x2="150" y2="250" stroke="rgba(109,93,254,0.3)" stroke-width="2"/>
+<line x1="150" y1="50" x2="150" y2="250" stroke="rgba(0,229,255,0.2)" stroke-width="2"/>
+<line x1="50" y1="150" x2="250" y2="150" stroke="rgba(0,229,255,0.2)" stroke-width="2"/>
+<circle cx="150" cy="50" r="30" fill="rgba(109,93,254,0.2)" stroke="#6D5DFE" stroke-width="2"/>
+<text x="150" y="55" text-anchor="middle" fill="#00E5FF" font-family="JetBrains Mono" font-size="14">0</text>
+<circle cx="250" cy="150" r="30" fill="rgba(109,93,254,0.2)" stroke="#6D5DFE" stroke-width="2"/>
+<text x="250" y="155" text-anchor="middle" fill="#00E5FF" font-family="JetBrains Mono" font-size="14">1</text>
+<circle cx="50" cy="150" r="30" fill="rgba(109,93,254,0.2)" stroke="#6D5DFE" stroke-width="2"/>
+<text x="50" y="155" text-anchor="middle" fill="#00E5FF" font-family="JetBrains Mono" font-size="14">x</text>
+<circle cx="150" cy="250" r="30" fill="rgba(109,93,254,0.2)" stroke="#6D5DFE" stroke-width="2"/>
+<text x="150" y="255" text-anchor="middle" fill="#00E5FF" font-family="JetBrains Mono" font-size="12">x+1</text>
+</svg>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 10: GENERAL REPRESENTATION -->
+<div class="slide" id="slide10">
+<div class="title-slide">General Representation</div>
+<div class="glass-card" style="max-width: 900px; text-align: center; padding: 50px;">
+<div style="font-family: Orbitron; color: var(--accent-violet); font-size: 1rem; margin-bottom: 30px; letter-spacing: 3px;">EVERY ELEMENT OF F<sub>p</sub><sup>n</sup></div>
+<div class="math-eq" style="font-size: 1.8rem; padding: 25px 50px; margin-bottom: 30px;">
+a0 + a1x + a2x2 + ... + a<sub>n-1</sub>x<sup>n-1</sup>
+</div>
+<div style="font-size: 1.2rem; color: var(--accent-cyan); margin-bottom: 30px;">where a<sub>i</sub> in Z<sub>p</sub> = {0, 1, 2, ..., p-1}</div>
+<div style="display: flex; justify-content: center; gap: 40px; margin-top: 30px;">
+<div style="text-align: center;"><div style="font-family: Orbitron; color: var(--accent-gold); font-size: 2rem;">p<sup>n</sup></div><div style="font-size: 0.9rem; color: rgba(255,255,255,0.6);">Total Elements</div></div>
+<div style="text-align: center;"><div style="font-family: Orbitron; color: var(--accent-gold); font-size: 2rem;">n</div><div style="font-size: 0.9rem; color: rgba(255,255,255,0.6);">Degree</div></div>
+<div style="text-align: center;"><div style="font-family: Orbitron; color: var(--accent-gold); font-size: 2rem;">p</div><div style="font-size: 0.9rem; color: rgba(255,255,255,0.6);">Prime Base</div></div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 11: ALGORITHM & FLOWCHART -->
+<div class="slide" id="slide11">
+<div class="title-slide">Algorithm and Flowchart</div>
+<div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1100px;">
+<div class="glass-card" style="flex: 1;">
+<div style="font-family: Orbitron; color: var(--accent-violet); margin-bottom: 20px;">ALGORITHM</div>
+<div class="step-container" style="gap: 12px;">
+<div class="step-item"><div class="step-num">1</div><div class="step-text"><span class="text-highlight">Input:</span> Prime p, degree n, irreducible polynomial f(x)</div></div>
+<div class="step-item"><div class="step-num">2</div><div class="step-text"><span class="text-highlight">Generate</span> all coefficient combinations (a0, a1, ..., a<sub>n-1</sub>)</div></div>
+<div class="step-item"><div class="step-num">3</div><div class="step-text"><span class="text-highlight">Construct</span> polynomial a0 + a1x + ... + a<sub>n-1</sub>x<sup>n-1</sup></div></div>
+<div class="step-item"><div class="step-num">4</div><div class="step-text"><span class="text-highlight">Reduce</span> modulo f(x) and coefficients mod p</div></div>
+<div class="step-item"><div class="step-num">5</div><div class="step-text"><span class="text-highlight">Output:</span> All p<sup>n</sup> distinct field elements</div></div>
+</div>
+</div>
+<div style="flex: 0.8; display: flex; flex-direction: column; gap: 15px;">
+<div class="flow-step">START</div>
+<div class="flow-step">Input p, n, f(x)</div>
+<div class="flow-step">Generate coefficients</div>
+<div class="flow-step">Build polynomials</div>
+<div class="flow-step">Reduce mod f(x)</div>
+<div class="flow-step">Print all elements</div>
+<div class="flow-step" style="border-color: var(--accent-gold); color: var(--accent-gold);">STOP</div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 12: PYTHON PROGRAM -->
+<div class="slide" id="slide12">
+<div class="title-slide">Python Program - F<sub>p</sub><sup>n</sup></div>
+<div class="code-window">
+<div class="code-header">
+<div class="code-dot red"></div>
+<div class="code-dot yellow"></div>
+<div class="code-dot green"></div>
+<div class="code-title">finite_field.py</div>
+</div>
+<div class="code-body">
+<span class="code-keyword">def</span> <span class="code-func">list_field_elements</span>(p, n, poly_coeffs):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># Generate all coefficient combinations</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;elements = []<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">from</span> itertools <span class="code-keyword">import</span> product<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">for</span> coeffs <span class="code-keyword">in</span> product(<span class="code-func">range</span>(p), repeat=n):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># Build polynomial representation</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;terms = []<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">for</span> i, a <span class="code-keyword">in</span> <span class="code-func">enumerate</span>(coeffs):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">if</span> a != <span class="code-number">0</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">if</span> i == <span class="code-number">0</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;terms.append(<span class="code-func">str</span>(a))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">elif</span> i == <span class="code-number">1</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;terms.append(<span class="code-string">f"{a}x"</span> <span class="code-keyword">if</span> a != <span class="code-number">1</span> <span class="code-keyword">else</span> <span class="code-string">"x"</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">else</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;terms.append(<span class="code-string">f"{a}x^{i}"</span> <span class="code-keyword">if</span> a != <span class="code-number">1</span> <span class="code-keyword">else</span> <span class="code-string">f"x^{i}"</span>)<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elem = <span class="code-string">" + "</span>.join(terms) <span class="code-keyword">if</span> terms <span class="code-keyword">else</span> <span class="code-string">"0"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elements.append(elem)<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">return</span> elements<br><br>
+<span class="code-comment"># Example: F_2^3 with x^3 + x + 1</span><br>
+p, n = <span class="code-number">2</span>, <span class="code-number">3</span><br>
+result = <span class="code-func">list_field_elements</span>(p, n, [<span class="code-number">1</span>, <span class="code-number">1</span>, <span class="code-number">0</span>, <span class="code-number">1</span>])<br>
+<span class="code-func">print</span>(<span class="code-string">f"Elements of F_{p}^{n}:"</span>)<br>
+<span class="code-keyword">for</span> e <span class="code-keyword">in</span> result:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-func">print</span>(e)
+</div>
+</div>
+</div>
+
+<!-- SLIDE 13: DEMONSTRATION -->
+<div class="slide" id="slide13">
+<div class="title-slide">Demonstration - F<sub>2</sub><sup>3</sup></div>
+<div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1000px;">
+<div class="glass-card" style="flex: 1;">
+<div style="font-family: Orbitron; color: var(--accent-violet); margin-bottom: 15px;">INPUT</div>
+<div style="font-family: JetBrains Mono; font-size: 1rem; line-height: 2; color: var(--accent-cyan);">
+p = 2<br>n = 3<br>f(x) = x3 + x + 1
+</div>
+<div style="margin-top: 20px; padding: 15px; background: rgba(0,229,255,0.05); border-radius: 12px;">
+<div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">Irreducible check: f(0)=1, f(1)=1 != 0 &#10003;</div>
+</div>
+</div>
+<div class="glass-card" style="flex: 1.2;">
+<div style="font-family: Orbitron; color: var(--accent-gold); margin-bottom: 15px;">OUTPUT - 8 Elements</div>
+<div class="field-grid" style="grid-template-columns: repeat(2, 1fr);">
+<div class="field-element">0</div>
+<div class="field-element">1</div>
+<div class="field-element">x</div>
+<div class="field-element">x + 1</div>
+<div class="field-element">x2</div>
+<div class="field-element">x2 + 1</div>
+<div class="field-element">x2 + x</div>
+<div class="field-element">x2 + x + 1</div>
+</div>
+<div style="text-align: center; margin-top: 15px; font-family: Orbitron; color: var(--accent-gold); font-size: 1.2rem;">Total = 2^3 = 8 elements</div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 14: PROBLEM STATEMENT 2 -->
+<div class="slide" id="slide14">
+<div class="title-slide">Problem Statement 2</div>
+<div class="glass-card" style="max-width: 900px; text-align: center; padding: 40px;">
+<div class="text-body" style="font-size: 1.3rem; margin-bottom: 30px;">
+Given <span class="text-highlight">n = p x q</span> where p and q are <span class="text-highlight">distinct primes</span>:
+</div>
+<div style="display: flex; gap: 40px; justify-content: center; margin-top: 20px;">
+<div class="problem-box" style="min-width: 250px;">
+<div class="problem-label">TASK 1</div>
+<div style="font-size: 1.1rem; color: var(--accent-cyan);">Find p and q using<br><span class="text-highlight">Pollard's Rho Algorithm</span></div>
+</div>
+<div class="problem-box" style="min-width: 250px;">
+<div class="problem-label">TASK 2</div>
+<div style="font-size: 1.1rem; color: var(--accent-cyan);">Compute<br><span class="text-highlight">Euler's Phi Function</span> phi(n)</div>
+</div>
+</div>
+<div style="margin-top: 30px;">
+<svg width="400" height="120" viewBox="0 0 400 120">
+<rect x="50" y="30" width="100" height="60" rx="10" fill="rgba(109,93,254,0.1)" stroke="#6D5DFE" stroke-width="2"/>
+<text x="100" y="55" text-anchor="middle" fill="#FFD700" font-family="Orbitron" font-size="14">n = pq</text>
+<text x="100" y="75" text-anchor="middle" fill="#00E5FF" font-family="JetBrains Mono" font-size="12">Composite</text>
+<line x1="150" y1="60" x2="200" y2="60" stroke="#FF4FD8" stroke-width="2" stroke-dasharray="5,5"/>
+<polygon points="200,60 190,55 190,65" fill="#FF4FD8"/>
+<rect x="220" y="20" width="70" height="40" rx="8" fill="rgba(0,229,255,0.1)" stroke="#00E5FF" stroke-width="2"/>
+<text x="255" y="45" text-anchor="middle" fill="#00E5FF" font-family="JetBrains Mono" font-size="14">p</text>
+<rect x="220" y="70" width="70" height="40" rx="8" fill="rgba(0,229,255,0.1)" stroke="#00E5FF" stroke-width="2"/>
+<text x="255" y="95" text-anchor="middle" fill="#00E5FF" font-family="JetBrains Mono" font-size="14">q</text>
+<text x="320" y="65" fill="#FFD700" font-family="Orbitron" font-size="12">phi(n)</text>
+</svg>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 15: INTEGER FACTORIZATION -->
+<div class="slide" id="slide15">
+<div class="title-slide">Integer Factorization</div>
+<div class="grid-2" style="max-width: 1000px;">
+<div class="glass-card">
+<div style="font-family: Orbitron; color: var(--accent-violet); font-size: 1.1rem; margin-bottom: 15px;">WHAT IS FACTORIZATION?</div>
+<div class="text-body">
+Breaking down a composite number into a product of smaller integers (prime factors). It is the <span class="text-highlight">mathematical backbone</span> of modern cryptography.
+</div>
+<div style="margin-top: 20px; padding: 15px; background: rgba(255,215,0,0.05); border-radius: 12px; text-align: center;">
+<div style="font-family: JetBrains Mono; color: var(--accent-gold); font-size: 1.3rem;">n = p1^e1 x p2^e2 x ... x pk^ek</div>
+</div>
+</div>
+<div class="glass-card">
+<div style="font-family: Orbitron; color: var(--accent-cyan); font-size: 1.1rem; margin-bottom: 15px;">CRYPTOGRAPHIC IMPORTANCE</div>
+<ul class="check-list" style="font-size: 0.95rem;">
+<li>RSA Encryption Security</li>
+<li>Blockchain Verification</li>
+<li>Digital Signatures</li>
+<li>Public Key Infrastructure</li>
+<li>Secure Communications</li>
+<li>Cybersecurity Protocols</li>
+</ul>
+</div>
+</div>
+<div style="margin-top: 25px; display: flex; gap: 20px; justify-content: center;">
+<div class="field-example">&#128274; RSA</div>
+<div class="field-example">&#128736; Blockchain</div>
+<div class="field-example">&#9998; Digital Signatures</div>
+<div class="field-example">&#128737; Cybersecurity</div>
+</div>
+</div>
+
+<!-- SLIDE 16: POLLARD'S RHO ALGORITHM -->
+<div class="slide" id="slide16">
+<div class="title-slide">Pollard's Rho Algorithm</div>
+<div style="display: flex; gap: 50px; align-items: center; max-width: 1100px;">
+<div class="glass-card" style="flex: 1;">
+<div style="font-family: Orbitron; color: var(--accent-violet); margin-bottom: 15px;">KEY CONCEPT</div>
+<div class="text-body" style="margin-bottom: 20px;">
+A <span class="text-highlight">randomized factorization</span> technique that uses a pseudo-random sequence and cycle detection (Floyd's algorithm) to find a non-trivial factor.
+</div>
+<div style="padding: 20px; background: rgba(109,93,254,0.1); border-radius: 16px; text-align: center;">
+<div style="font-family: Orbitron; color: var(--accent-gold); margin-bottom: 10px;">KEY FORMULA</div>
+<div class="math-eq" style="font-size: 1.5rem;">d = gcd(|x - y|, n)</div>
+</div>
+</div>
+<div style="flex: 1; text-align: center;">
+<div style="font-family: Orbitron; color: var(--accent-cyan); margin-bottom: 20px;">THE RHO CYCLE</div>
+<svg width="320" height="280" viewBox="0 0 320 280">
+<path d="M 80 140 Q 80 40 160 40 Q 240 40 240 140 Q 240 240 160 240 Q 120 240 120 200 Q 120 160 160 160 Q 200 160 200 200 Q 200 220 180 220" 
+fill="none" stroke="#6D5DFE" stroke-width="3" stroke-dasharray="1000" stroke-dashoffset="0">
+<animate attributeName="stroke-dashoffset" from="1000" to="0" dur="3s" fill="freeze"/>
+</path>
+<circle cx="80" cy="140" r="8" fill="#00E5FF">
+<animate attributeName="cx" values="80;160;240;160;120;160;200;180" dur="3s" fill="freeze"/>
+<animate attributeName="cy" values="140;40;140;240;200;160;200;220" dur="3s" fill="freeze"/>
+</circle>
+<text x="160" y="20" text-anchor="middle" fill="#FFD700" font-family="Orbitron" font-size="12">Cycle Detected!</text>
+<text x="160" y="270" text-anchor="middle" fill="#00E5FF" font-family="JetBrains Mono" font-size="14">f(x) = (x^2 + c) mod n</text>
+</svg>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 17: WORKING OF POLLARD'S RHO -->
+<div class="slide" id="slide17">
+<div class="title-slide">Working of Pollard's Rho</div>
+<div class="step-container" style="max-width: 800px;">
+<div class="step-item">
+<div class="step-num">1</div>
+<div class="step-text"><span class="text-highlight">Choose</span> a random starting value x and constant c</div>
+</div>
+<div class="step-item">
+<div class="step-num">2</div>
+<div class="step-text"><span class="text-highlight">Generate</span> two sequences: x (slow) and y (fast, 2x speed)</div>
+</div>
+<div class="step-item">
+<div class="step-num">3</div>
+<div class="step-text"><span class="text-highlight">Detect cycle</span> using Floyd's algorithm: x moves 1 step, y moves 2 steps</div>
+</div>
+<div class="step-item">
+<div class="step-num">4</div>
+<div class="step-text"><span class="text-highlight">Compute</span> gcd(|x - y|, n) at each step</div>
+</div>
+<div class="step-item">
+<div class="step-num">5</div>
+<div class="step-text"><span class="text-highlight">Extract factor</span> when 1 < d < n (non-trivial factor found!)</div>
+</div>
+</div>
+<div class="glass-card" style="margin-top: 25px; max-width: 700px; text-align: center;">
+<div style="font-family: JetBrains Mono; font-size: 1.1rem; color: var(--accent-cyan);">
+x<sub>i+1</sub> = (x<sub>i</sub><sup>2</sup> + c) mod n &nbsp;&nbsp;|&nbsp;&nbsp; y<sub>i+1</sub> = f(f(y<sub>i</sub>)) &nbsp;&nbsp;|&nbsp;&nbsp; d = gcd(|x - y|, n)
+</div>
+</div>
+</div>
+
+<!-- SLIDE 18: EXAMPLE & PYTHON PROGRAM -->
+<div class="slide" id="slide18">
+<div class="title-slide">Example and Python Program</div>
+<div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1100px;">
+<div class="glass-card" style="flex: 1;">
+<div style="font-family: Orbitron; color: var(--accent-violet); margin-bottom: 15px;">EXAMPLE</div>
+<div style="font-family: JetBrains Mono; font-size: 1.1rem; line-height: 2; color: var(--accent-cyan);">
+n = 8051<br>
+p = 83<br>
+q = 97<br>
+83 x 97 = 8051 &#10003;
+</div>
+<div class="terminal" style="margin-top: 15px;">
+<div class="terminal-line"><span class="terminal-prompt">$</span> <span class="terminal-output">python pollard_rho.py</span></div>
+<div class="terminal-line"><span class="terminal-success">Factor found: 83</span></div>
+<div class="terminal-line"><span class="terminal-success">Other factor: 97</span></div>
+<div class="terminal-line"><span class="terminal-success">Verification: 83 x 97 = 8051</span></div>
+</div>
+</div>
+<div class="code-window" style="flex: 1.2;">
+<div class="code-header">
+<div class="code-dot red"></div>
+<div class="code-dot yellow"></div>
+<div class="code-dot green"></div>
+<div class="code-title">pollard_rho.py</div>
+</div>
+<div class="code-body">
+<span class="code-keyword">import</span> math, random<br><br>
+<span class="code-keyword">def</span> <span class="code-func">pollard_rho</span>(n):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">if</span> n % <span class="code-number">2</span> == <span class="code-number">0</span>: <span class="code-keyword">return</span> <span class="code-number">2</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;x, y, c = random.randint(<span class="code-number">2</span>, n-<span class="code-number">1</span>), random.randint(<span class="code-number">2</span>, n-<span class="code-number">1</span>), random.randint(<span class="code-number">1</span>, n-<span class="code-number">1</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;d = <span class="code-number">1</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">while</span> d == <span class="code-number">1</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = (<span class="code-func">pow</span>(x, <span class="code-number">2</span>, n) + c) % n<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y = (<span class="code-func">pow</span>(y, <span class="code-number">2</span>, n) + c) % n<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y = (<span class="code-func">pow</span>(y, <span class="code-number">2</span>, n) + c) % n<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;d = math.gcd(<span class="code-func">abs</span>(x - y), n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">return</span> d <span class="code-keyword">if</span> d != n <span class="code-keyword">else</span> <span class="code-keyword">None</span><br><br>
+<span class="code-comment"># Factor 8051</span><br>
+n = <span class="code-number">8051</span><br>
+p = <span class="code-func">pollard_rho</span>(n)<br>
+q = n // p<br>
+<span class="code-func">print</span>(<span class="code-string">f"Factors: {p} x {q}"</span>)
+</div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 19: EULER'S PHI FUNCTION -->
+<div class="slide" id="slide19">
+<div class="title-slide">Euler's Phi Function</div>
+<div style="display: flex; gap: 40px; align-items: flex-start; max-width: 1000px;">
+<div class="glass-card" style="flex: 1;">
+<div style="font-family: Orbitron; color: var(--accent-violet); margin-bottom: 15px;">DEFINITION</div>
+<div class="text-body" style="margin-bottom: 20px;">
+phi(n) counts the number of integers from 1 to n that are <span class="text-highlight">coprime</span> to n.
+</div>
+<div style="padding: 20px; background: rgba(109,93,254,0.1); border-radius: 16px; text-align: center;">
+<div style="font-family: Orbitron; color: var(--accent-gold); margin-bottom: 10px;">FOR DISTINCT PRIMES</div>
+<div class="math-eq" style="font-size: 1.4rem;">phi(n) = (p-1)(q-1)</div>
+</div>
+<div style="margin-top: 20px; padding: 15px; background: rgba(0,229,255,0.05); border-radius: 12px;">
+<div style="font-family: JetBrains Mono; font-size: 1rem; color: var(--accent-cyan); line-height: 1.8;">
+phi(8051) = phi(83 x 97)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (83-1) x (97-1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= 82 x 96<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span style="color: #FFD700; font-weight: bold;">7872</span>
+</div>
+</div>
+</div>
+<div class="glass-card" style="flex: 1;">
+<div style="font-family: Orbitron; color: var(--accent-cyan); margin-bottom: 15px;">IMPORTANCE IN RSA</div>
+<div class="text-body" style="margin-bottom: 15px;">
+Euler's totient is the <span class="text-highlight">cornerstone</span> of RSA encryption:
+</div>
+<ul class="check-list" style="font-size: 0.95rem;">
+<li>Public key: (e, n)</li>
+<li>Private key: (d, n)</li>
+<li>e x d ≡ 1 (mod phi(n))</li>
+<li>Encryption: c = m^e mod n</li>
+<li>Decryption: m = c^d mod n</li>
+<li>Security relies on factoring n</li>
+</ul>
+<div style="margin-top: 15px; padding: 12px; background: rgba(255,215,0,0.05); border-radius: 10px; text-align: center;">
+<div style="font-family: JetBrains Mono; font-size: 0.9rem; color: var(--accent-gold);">Without phi(n), RSA breaks!</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SLIDE 20: APPLICATIONS & CONCLUSION -->
+<div class="slide" id="slide20">
+<div class="math-bg" id="mathBg20"></div>
+<div class="title-slide">Applications and Conclusion</div>
+<div class="grid-3" style="max-width: 1100px; margin-bottom: 30px;">
+<div class="app-card">
+<div class="app-icon">&#128274;</div>
+<div class="app-title">RSA Encryption</div>
+<div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">Public-key cryptography securing the internet</div>
+</div>
+<div class="app-card">
+<div class="app-icon">&#128737;</div>
+<div class="app-title">AES Security</div>
+<div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">Advanced encryption using finite field arithmetic</div>
+</div>
+<div class="app-card">
+<div class="app-icon">&#9881;</div>
+<div class="app-title">Error Correcting Codes</div>
+<div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">Reed-Solomon codes for reliable data transmission</div>
+</div>
+<div class="app-card">
+<div class="app-icon">&#128187;</div>
+<div class="app-title">Computer Networks</div>
+<div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">CRC checks and secure protocols</div>
+</div>
+<div class="app-card">
+<div class="app-icon">&#128736;</div>
+<div class="app-title">Blockchain</div>
+<div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">Cryptographic hashing and verification</div>
+</div>
+<div class="app-card">
+<div class="app-icon">&#128272;</div>
+<div class="app-title">Data Security</div>
+<div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">End-to-end encryption and digital privacy</div>
+</div>
+</div>
+<div class="glass-card" style="max-width: 900px; margin-bottom: 25px;">
+<div style="font-family: Orbitron; color: var(--accent-gold); font-size: 1.1rem; margin-bottom: 15px; text-align: center;">KEY TAKEAWAYS</div>
+<ul class="check-list">
+<li>Finite fields contain exactly p<sup>n</sup> elements</li>
+<li>Irreducible polynomials construct finite fields</li>
+<li>Pollard's Rho efficiently factors large numbers</li>
+<li>Euler's Phi Function is essential in cryptography</li>
+<li>Mathematics powers modern digital security</li>
+</ul>
+</div>
+<div class="quote-text" style="margin-bottom: 20px;">
+"Behind every secure digital system lies the beauty of mathematics."
+</div>
+<div class="thank-you-text" style="font-size: 4rem;">THANK YOU</div>
+<div style="font-family: Orbitron; color: var(--accent-cyan); font-size: 1.5rem; margin-top: 10px; text-align: center;">QUESTIONS?</div>
+</div>
+
+<!-- NAVIGATION -->
+<div class="nav-controls">
+<button class="nav-btn" onclick="prevSlide()">&#9664; Prev</button>
+<div class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">20</span></div>
+<button class="nav-btn" onclick="nextSlide()">Next &#9654;</button>
+</div>
+<div class="progress-bar" id="progressBar" style="width: 5%;"></div>
+
+</div>
+
+<script>
+let currentSlide = 1;
+const totalSlides = 20;
+
+function showSlide(n) {
+  const slides = document.querySelectorAll('.slide');
+  if (n > totalSlides) currentSlide = 1;
+  if (n < 1) currentSlide = totalSlides;
+  slides.forEach(s => s.classList.remove('active'));
+  document.getElementById('slide' + currentSlide).classList.add('active');
+  document.getElementById('currentSlide').textContent = currentSlide;
+  document.getElementById('progressBar').style.width = (currentSlide / totalSlides * 100) + '%';
+}
+
+function nextSlide() { currentSlide++; showSlide(currentSlide); }
+function prevSlide() { currentSlide--; showSlide(currentSlide); }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+  if (e.key === 'ArrowLeft') prevSlide();
+});
+
+// Create floating particles
+function createParticles() {
+  const container = document.getElementById('particles');
+  const colors = ['#6D5DFE', '#00E5FF', '#FFD700', '#FF4FD8'];
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.width = Math.random() * 4 + 2 + 'px';
+    p.style.height = p.style.width;
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDelay = Math.random() * 15 + 's';
+    p.style.animationDuration = (10 + Math.random() * 10) + 's';
+    container.appendChild(p);
+  }
+}
+
+// Create floating math symbols for slide 1
+function createMathSymbols() {
+  const container = document.getElementById('mathBg1');
+  if (!container) return;
+  const symbols = ['0', '1', 'x', 'p', 'q', 'phi', '+', 'x', '=', 'F', 'Z', 'mod', 'gcd'];
+  for (let i = 0; i < 30; i++) {
+    const s = document.createElement('div');
+    s.className = 'math-symbol';
+    s.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    s.style.left = Math.random() * 100 + '%';
+    s.style.animationDelay = Math.random() * 20 + 's';
+    s.style.animationDuration = (15 + Math.random() * 10) + 's';
+    container.appendChild(s);
+  }
+}
+
+createParticles();
+createMathSymbols();
+</script>
+</body>
+</html>
